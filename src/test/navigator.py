@@ -13,7 +13,7 @@ class Navigator:
     self.action_model = load_keras_model(3, len(ACTIONS_LIST), ACTION_MODEL_WEIGHTS_PATH)
     self.memory = SPTM()
     self.trial_index = -1
-    print 'Navigator ready!'
+    print('Navigator ready!')
 
   def get_screens_and_coordinates(self):
     return self.screens, self.coordinates
@@ -74,7 +74,7 @@ class Navigator:
     self.memory.set_shortcuts_cache_file(environment)
     self.memory.build_graph(self.keyframes, self.keyframe_coordinates)
     best_index, best_probability = self.memory.set_goal(self.goal_frame, self.goal_location, self.keyframe_coordinates)
-    print 'Goal localization confidence:', best_probability
+    print('Goal localization confidence:', best_probability)
     self.keyframes.append(self.goal_frame)
     self.keyframe_coordinates.append(self.goal_location) #NOTE: these are not the exact goal frame coordinates, but close
     self.memory.compute_shortest_paths(len(self.keyframes) - 1)

@@ -24,7 +24,7 @@ def sieve(shortcuts, top_number):
   probabilities = shortcuts[:, 0]
   n = shortcuts.shape[0]
   threshold = top_number_to_threshold(n, top_number, probabilities)
-  print 'Confidence threshold for top', top_number, 'out of', n, ':', threshold
+  print('Confidence threshold for top', top_number, 'out of', n, ':', threshold)
   sieved_shortcut_indexes = []
   for index in xrange(n):
     if probabilities[index] >= threshold:
@@ -161,7 +161,7 @@ class SPTM:
   def smooth_shortcuts_matrix(self, shortcuts_matrix, keyframe_coordinates):
     for first in xrange(len(shortcuts_matrix)):
       for second in xrange(first + 1, len(shortcuts_matrix)):
-        shortcuts_matrix[first][second] = (shortcuts_matrix[first][second] + 
+        shortcuts_matrix[first][second] = (shortcuts_matrix[first][second] +
                                            shortcuts_matrix[second][first]) / 2.0
     shortcuts = []
     for first in xrange(len(shortcuts_matrix)):
@@ -185,7 +185,7 @@ class SPTM:
       for first in xrange(len(keyframes)):
         probabilities = self.predict_single_input(keyframes[first])
         shortcuts_matrix.append(probabilities)
-        print 'Finished:', float(first * 100) / float(len(keyframes)), '%'
+        print('Finished:', float(first * 100) / float(len(keyframes)), '%')
       shortcuts = self.smooth_shortcuts_matrix(shortcuts_matrix, keyframe_coordinates)
       shortcuts = sieve(shortcuts, LARGE_SHORTCUTS_NUMBER)
       np.save(self.shortcuts_cache_file, shortcuts)
@@ -226,11 +226,11 @@ class SPTM:
   def set_goal(self, goal_frame, real_goal_coordinates, keyframe_coordinates):
     self.step = 0
     best_index, probabilities, nns = self.find_knn_median_threshold(goal_frame, NUMBER_OF_NEAREST_NEIGHBOURS, 0.0)
-    print nns
-    print [probabilities[nn] for nn in nns]
-    print [get_distance(real_goal_coordinates, keyframe_coordinates[nn]) for nn in nns]
-    print [keyframe_coordinates[nn] for nn in nns]
-    print real_goal_coordinates
+    print(nns)
+    print([probabilities[nn] for nn in nns])
+    print([get_distance(real_goal_coordinates, keyframe_coordinates[nn]) for nn in nns])
+    print([keyframe_coordinates[nn] for nn in nns])
+    print(real_goal_coordinates)
     best_probability = 1.0
     if best_index is None:
       best_index, best_probability, _ = self.find_nn(goal_frame)
@@ -240,7 +240,7 @@ class SPTM:
     edge = (best_index, goal_index)
     self.add_double_sided_edge(*edge)
     self.append_to_memory_buffer(goal_frame)
-    print 'Real goal distance:', get_distance(real_goal_coordinates, keyframe_coordinates[best_index])
+    print('Real goal distance:', get_distance(real_goal_coordinates, keyframe_coordinates[best_index]))
     self.smoothed_memory = None
     self.last_nn = None
     return best_index, best_probability
@@ -248,8 +248,8 @@ class SPTM:
   def compute_shortest_paths(self, graph_goal):
     self.shortest_paths = nx.shortest_path(self.graph, target=graph_goal, weight='weight')
     self.shortest_distances = [len(value) - 1 for value in self.shortest_paths.values()]
-    print 'Mean shortest_distances to goal:', mean(self.shortest_distances)
-    print 'Median shortest_distances to goal:', median(self.shortest_distances)
+    print('Mean shortest_distances to goal:', mean(self.shortest_distances))
+    print('Median shortest_distances to goal:', median(self.shortest_distances))
 
   def get_shortest_paths_and_distances(self):
     return self.shortest_paths, self.shortest_distances
@@ -315,7 +315,7 @@ class SPTM:
 
   def select_IRG_on_shortest_path(self, nn, probabilities):
     shortest_path = self.shortest_paths[nn]
-    print 'Current shortest path:', len(shortest_path) - 1
+    print('Current shortest path:', len(shortest_path) - 1)
     if self.plot_shortest_path:
       plotter = TrajectoryPlotter(os.path.join(EVALUATION_PATH, 'shortest_path%d_%d.pdf' % (self.trial_index, self.step)), *TEST_SETUPS[self.environment].box)
       self.step += 1
@@ -343,14 +343,14 @@ class SPTM:
         if probabilities[index] >= INTERMEDIATE_REACHABLE_GOAL_THRESHOLD:
           best_look_ahead = look_ahead
     IRG = shortest_path[best_look_ahead]
-    print 'Found IRG:', IRG
+    print('Found IRG:', IRG)
     return IRG
 
   def find_intermediate_reachable_goal(self, input, current_coordinates, keyframe_coordinates):
     nn, probabilities = self.find_smoothed_nn(input)
     self.last_nn = nn
     if nn is None:
-      print 'Found no IRG!'
+      print('Found no IRG!')
       return None, None
     else:
       return self.select_IRG_on_shortest_path(nn, probabilities), nn

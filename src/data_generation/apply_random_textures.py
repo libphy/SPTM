@@ -118,18 +118,17 @@ def main():
   if args.mode == 'test':
     textures = get_textures(TEST_TEXTURES_PATH, [])
     number_of_maps = NUMBER_OF_IDENTICAL_TEST_MAPS
-    generator_arguments = (textures, GOAL_TEXTURES, LANDMARK_TEXTURES) 
+    generator_arguments = (textures, GOAL_TEXTURES, LANDMARK_TEXTURES)
   else:
     textures = get_textures(TEST_TEXTURES_PATH, GOAL_TEXTURES)
     number_of_maps = NUMBER_OF_TRAIN_MAPS
-    generator_arguments = (textures, [], []) 
+    generator_arguments = (textures, [], [])
   texture_generator = generator_class(*generator_arguments)
   for index in xrange(number_of_maps):
-    print index
+    print(index)
     set_seed(args.mode)
     add_map_to_wad(wad, change_textures(wad.maps['MAP01'], texture_generator), index)
   wad.to_file(out_file)
 
 if __name__ == '__main__':
   main()
-  

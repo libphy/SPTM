@@ -16,11 +16,11 @@ def get_from_env(name, type, default):
       raise Exception('Unknown constant type!')
   else:
     returned_value = default
-  print name, '=', returned_value
+  print(name, '=', returned_value)
   return returned_value
 
 # test setups
-TEST_SETUPS = register_test_setups()  
+TEST_SETUPS = register_test_setups()
 
 # loaded from environment
 SMOOTHED_LOCALIZATION = get_from_env('SMOOTHED_LOCALIZATION', bool, True)
