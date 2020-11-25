@@ -1,4 +1,6 @@
-*
+*.yml
+*.pyc
+*.out
 !*/
 !*.lmp
 !*.wad
@@ -28,5 +30,7 @@ build/*
 experiments/*
 !experiments/download_models.sh
 ._*
-!conda_env.txt
+conda*
+requirements*
+*results.txt     
 
