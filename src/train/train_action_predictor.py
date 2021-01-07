@@ -1,4 +1,11 @@
 from train_setup import *
+import sys
+sys.path.append('..')
+sys.path.append('../common')
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+import time
+import os
 
 def data_generator():
   game = doom_navigation_setup(DEFAULT_RANDOM_SEED, TRAIN_WAD)
@@ -14,7 +21,7 @@ def data_generator():
       yield_count = 0
     x = []
     y = []
-    for _ in xrange(MAX_CONTINUOUS_PLAY):
+    for _ in range(MAX_CONTINUOUS_PLAY):
       current_x = game.get_state().screen_buffer.transpose(VIZDOOM_TO_TF)
       action_index = random.randint(0, ACTION_CLASSES - 1)
       game_make_action_wrapper(game, ACTIONS_LIST[action_index], TRAIN_REPEAT)
@@ -51,14 +58,18 @@ def data_generator():
         y_result = []
 
 if __name__ == '__main__':
+  os.environ["CUDA_VISIBLE_DEVICES"]="0"
   logs_path, current_model_path = setup_training_paths(EXPERIMENT_OUTPUT_FOLDER)
   model = ACTION_NETWORK(((1 + ACTION_STATE_ENCODING_FRAMES) * NET_CHANNELS, NET_HEIGHT, NET_WIDTH), ACTION_CLASSES)
-  adam = keras.optimizers.Adam(lr=LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+  adam = Adam(lr=LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
   model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
-  callbacks_list = [keras.callbacks.TensorBoard(log_dir=logs_path, write_graph=False),
-                    keras.callbacks.ModelCheckpoint(current_model_path,
-                                                    period=MODEL_CHECKPOINT_PERIOD)]
-  model.fit_generator(data_generator(),
+  callbacks_list = [TensorBoard(log_dir=logs_path, write_graph=False),
+                    ModelCheckpoint(current_model_path,
+                    period=MODEL_CHECKPOINT_PERIOD)]
+  t0 = time.time()
+  model.fit(data_generator(),
                       steps_per_epoch=DUMP_AFTER_BATCHES,
                       epochs=ACTION_MAX_EPOCHS,
                       callbacks=callbacks_list)
+  t1 = time.time()
+  print('action predictor train done in', t1-t0, 'sec')

@@ -1,27 +1,37 @@
-#!/usr/bin/env python
 #taken from https://github.com/raghakot/keras-resnet/blob/master/resnet.py
 
-from __future__ import division
-
+#from __future__ import division
+import numpy as np
 import six
-from keras.models import Model
-from keras.layers import (
+#import tensorflow as tf
+from tensorflow.keras import Model
+#from tensorflow.keras import Input
+from tensorflow.keras.layers import (
     Input,
     Activation,
     Dense,
-    Flatten
-)
-from keras.layers.core import Lambda
-from keras.layers.merge import (dot, concatenate)
-from keras.layers.convolutional import (
+    Flatten,
+    Lambda,
+    Dot, 
+    concatenate,
     Conv2D,
-    MaxPooling2D,
-    AveragePooling2D
-)
-from keras.layers.merge import add
-from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l2
-from keras import backend as K
+    MaxPool2D,
+    AveragePooling2D,
+    Add,
+    BatchNormalization
+) ## Note that the tf.keras.layers.Input is a function type whereas tf.keras.Input is a tensor. Both work with builder while tf.keras.layers.InputLayer doesn't.
+#from keras.layers.core import Lambda
+#from keras.layers.merge import (dot, concatenate)
+#from keras.layers.convolutional import (
+#    Conv2D,
+#    MaxPooling2D,
+#    AveragePooling2D
+#)
+#from keras.layers.merge import add
+#from keras.layers.normalization import BatchNormalization
+from tensorflow.keras.regularizers import l2 # use L2 for tf 2.3.0 or later
+#from keras import backend as K
+import tensorflow.keras.backend as K
 
 NUM_EMBEDDING = 512 #256 #512 #1024 #256 #1024 #256
 TOP_HIDDEN = 4 #1 #4
@@ -97,7 +107,7 @@ def _shortcut(input, residual):
                           kernel_initializer="he_normal",
                           kernel_regularizer=l2(0.0001))(input)
 
-    return add([shortcut, residual])
+    return Add()([shortcut, residual])
 
 
 def _residual_block(block_function, filters, repetitions, is_first_layer=False):
@@ -168,7 +178,8 @@ def _handle_dim_ordering():
     global ROW_AXIS
     global COL_AXIS
     global CHANNEL_AXIS
-    if K.image_dim_ordering() == 'tf':
+    #if K.image_dim_ordering() == 'tf':
+    if K.image_data_format() == 'channels_last':
         ROW_AXIS = 1
         COL_AXIS = 2
         CHANNEL_AXIS = 3
@@ -187,20 +198,21 @@ def _get_block(identifier):
     return identifier
 
 def _bn_relu_for_dense(input):
-    norm = BatchNormalization(axis=1)(input)
+    norm = BatchNormalization(axis=1)(input) #why does it have axis=1?
     return Activation('relu')(norm)
 
 def _top_network(input):
     raw_result = _bn_relu_for_dense(input)
-    for _ in xrange(TOP_HIDDEN):
+    for _ in range(TOP_HIDDEN):
         raw_result = Dense(units=NUM_EMBEDDING, kernel_initializer='he_normal')(raw_result)
         raw_result = _bn_relu_for_dense(raw_result)
     output = Dense(units=2, activation='softmax', kernel_initializer='he_normal')(raw_result)
     return output
 
+
 class ResnetBuilder(object):
     @staticmethod
-    def build(input_shape, num_outputs, block_fn, repetitions, is_classification):
+    def build(input_shape, num_outputs, block_fn, repetitions, is_classification, return_model=True, input_tensor=None):
         """Builds a custom ResNet like architecture.
         Args:
             input_shape: The input shape in the form (nb_channels, nb_rows, nb_cols)
@@ -217,15 +229,19 @@ class ResnetBuilder(object):
             raise Exception("Input shape should be a tuple (nb_channels, nb_rows, nb_cols)")
 
         # Permute dimension order if necessary
-        if K.image_dim_ordering() == 'tf':
+        if K.image_data_format() == 'channels_last':
             input_shape = (input_shape[1], input_shape[2], input_shape[0])
 
         # Load function from str if needed.
         block_fn = _get_block(block_fn)
-
-        input = Input(shape=input_shape)
+        if input_tensor is not None:
+            print('input_tensor', input_tensor)
+            input = input_tensor
+        else:
+            input = Input(shape=input_shape)
+            print('input',input)
         conv1 = _conv_bn_relu(filters=64, kernel_size=(7, 7), strides=(2, 2))(input)
-        pool1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding="same")(conv1)
+        pool1 = MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="same")(conv1)
 
         block = pool1
         filters = 64
@@ -247,12 +263,18 @@ class ResnetBuilder(object):
         dense = Dense(units=num_outputs, kernel_initializer="he_normal",
                       activation=last_activation)(flatten1)
 
-        model = Model(inputs=input, outputs=dense)
-        return model
+        if return_model:
+            model = Model(inputs=input, outputs=dense)
+            print('returning model')
+            return model
+        else:
+            print('returning layer')
+            return dense
+
 
     @staticmethod
-    def build_resnet_18(input_shape, num_outputs, is_classification=True):
-        return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2], is_classification)
+    def build_resnet_18(input_shape, num_outputs, is_classification=True, return_model=True, input_tensor=None):
+        return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2], is_classification, return_model, input_tensor)
 
     @staticmethod
     def build_resnet_34(input_shape, num_outputs):
@@ -275,7 +297,9 @@ class ResnetBuilder(object):
         number_of_top_layers = 3 + TOP_HIDDEN * 3
         input = Input(shape=(2 * NUM_EMBEDDING,))
         output = edge_model.layers[-number_of_top_layers](input) #_top_network(input)
-        for index in xrange(-number_of_top_layers + 1, 0):
+        #input = Input(shape=tuple(np.array(edge_model.layers[3].get_output_shape_at(0)[1:])*(2,1,1))) ## GK: new mods
+        
+        for index in range(-number_of_top_layers + 1, 0):
             output = edge_model.layers[index](output)
         return Model(inputs=input, outputs=output)
 
@@ -290,14 +314,19 @@ class ResnetBuilder(object):
         return Model(inputs=input, outputs=output)
 
     @staticmethod
-    def build_siamese_resnet_18(input_shape, num_outputs):
+    def build_siamese_resnet_18(input_shape, num_outputs=None, rawout=False):
         channels, height, width = input_shape
         branch_channels = 3 #channels / 2
         branch_input_shape = (branch_channels, height, width)
-        branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False)
+        #branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False, False)
         input = Input(shape=(height, width, channels))
-        first_branch = branch(Lambda(lambda x: x[:, :, :, :3])(input))
-        second_branch = branch(Lambda(lambda x: x[:, :, :, 3:])(input))
+        #inp1 =  Lambda(lambda x: x[:, :, :, :3])(input)
+        #inp2 =  Lambda(lambda x: x[:, :, :, 3:])(input)
+        #print('inp1', inp1)
+        #print('inp2', inp2)
+        first_branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False, False, input[:,:,:,:3])
+        second_branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False, False, input[:,:,:,3:])
+        #second_branch = branch(Lambda(lambda x: x[:, :, :, 3:])(input))
         if NORMALIZATION_ON:
             first_branch = Lambda(lambda x: K.l2_normalize(x, axis=1))(first_branch)
             second_branch = Lambda(lambda x: K.l2_normalize(x, axis=1))(second_branch) 
@@ -305,12 +334,14 @@ class ResnetBuilder(object):
         raw_result = concatenate([first_branch, second_branch])
         output = _top_network(raw_result)
         
-        # raw_result = dot([first_branch, second_branch], axes=1)
+        # raw_result = Dot([first_branch, second_branch], axes=1)
         # result = Lambda(lambda x: (K.clip(x, 0.5, 1) - 0.5) * 2.0)(raw_result)
         # negated_result = Lambda(lambda x: 1 - x)(result)
         # output = concatenate([negated_result, result])
-        
-        return Model(inputs=input, outputs=output)
+        if rawout:
+            return Model(inputs=input, outputs=raw_result)
+        else:    
+            return Model(inputs=input, outputs=output)
 
     @staticmethod
     def build_pixel_comparison_network(input_shape):
@@ -319,11 +350,11 @@ class ResnetBuilder(object):
         first = Flatten()(Lambda(lambda x: x[:, :, :, :1])(input))
         second = Flatten()(Lambda(lambda x: x[:, :, :, 1:])(input))
         # second = Lambda(lambda x: -x)(second)
-        # difference = add([first, second])
+        # difference = Add()([first, second])
         # raw_result = Lambda(lambda x: K.mean(K.abs(x), axis=1, keepdims=True))(difference)
         # prob_zero = Lambda(lambda x: x / 255.0)(raw_result)
         # prob_one = Lambda(lambda x: 1.0 - x)(prob_zero)
-        prob_one = dot([first, second], axes=1, normalize=True)
+        prob_one = Dot([first, second], axes=1, normalize=True)
         prob_zero = Lambda(lambda x: 1.0 - x)(prob_one)
         output = concatenate([prob_zero, prob_one])
         return Model(inputs=input, outputs=output)

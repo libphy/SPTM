@@ -8,7 +8,7 @@ def main_visualize_shortcuts(environment):
   trajectory_plotter = TrajectoryPlotter(os.path.join(EVALUATION_PATH, environment + '_graph.pdf'), *TEST_SETUPS[environment].box)
   for point in keyframe_coordinates:
     trajectory_plotter.add_point((point[0], point[1]))
-  for index in xrange(memory.get_number_of_shortcuts()):
+  for index in range(memory.get_number_of_shortcuts()):
     first, second = memory.get_shortcut(index)
     assert abs(first - second) > MIN_SHORTCUT_DISTANCE
     trajectory_plotter.add_edge((keyframe_coordinates[first][0],

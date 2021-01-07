@@ -1,7 +1,10 @@
+import os
+print('In process_log.py', os.environ['PYTHONPATH'])
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
+sys.path.append('..')
 sys.path.append('../common')
 sys.path.append('../../common')
 sys.path.append('../../src/common')

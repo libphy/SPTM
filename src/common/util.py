@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-import cPickle
+import pickle
 import cv2
 import numpy as np
 import h5py
@@ -16,7 +15,6 @@ from video_writer import *
 
 import cv2
 import os
-import cPickle
 import numpy as np
 np.random.seed(DEFAULT_RANDOM_SEED)
 import keras

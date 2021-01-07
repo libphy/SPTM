@@ -99,7 +99,7 @@ class Navigator:
       self.not_localized_count = 0
 
   def record_all_during_repeat(self, right_image):
-    for index in xrange(-TEST_REPEAT, 0):
+    for index in range(-TEST_REPEAT, 0):
       left_image = self.screens[index]
       if right_image is None:
         right_image = left_image
@@ -133,7 +133,7 @@ class Navigator:
       action_function = self._policy_explore_step_with_repeat
       action_function_arguments = ()
       number_of_actions = 5
-    for counter in xrange(number_of_actions):
+    for counter in range(number_of_actions):
       if self.check_frozen_with_repeat():
         break
       action_function(*action_function_arguments)
@@ -146,7 +146,7 @@ class Navigator:
   def _align_step_with_repeat(self, teach_and_repeat):
     self.log_navigation_state()
     if self.just_started:
-      for _ in xrange(TEST_REPEAT):
+      for _ in range(TEST_REPEAT):
         self.screens.append(self.screens[-1])
         self.coordinates.append(self.coordinates[-1])
       self.just_started = False
@@ -177,7 +177,7 @@ class Navigator:
       else:
         action_index = np.random.choice(len(ACTIONS_LIST))
         action = ACTIONS_LIST[action_index]
-    for repeat_index in xrange(TEST_REPEAT):
+    for repeat_index in range(TEST_REPEAT):
       if repeat_index > 0:
         self.log_navigation_state()
       game_make_action_wrapper(self.game, action, 1)
@@ -186,7 +186,7 @@ class Navigator:
   def _random_explore_step_with_repeat(self):
     action_index = random.randint(0, len(ACTIONS_LIST) - 1)
     self.game.set_action(ACTIONS_LIST[action_index])
-    for repeat_index in xrange(TEST_REPEAT):
+    for repeat_index in range(TEST_REPEAT):
       self.log_navigation_state()
       self.game.advance_action(1, True)
       self.steps += 1
